@@ -18,6 +18,14 @@ except ImportError:
           "Make sure 'modules/whois_lookup.py' exists.", file=sys.stderr)
     sys.exit(1)
 
+# Import the new DNS lookup module
+try:
+    from modules.dns_lookup import get_dns_records
+except ImportError:
+    print("[!] Error: Could not import 'dns_lookup' module. "
+          "Make sure 'modules/dns_lookup.py' exists.", file=sys.stderr)
+    sys.exit(1)
+
 
 def parse_port_range(port_range_str):
     """
@@ -43,9 +51,10 @@ def parse_port_range(port_range_str):
         # Re-raise with a more specific message for argparse
         raise argparse.ArgumentTypeError(f"Invalid port range format or value: {port_range_str}. {e}")
 
-def perform_reconnaissance(domain, ports, output_file, enable_subdomains, enable_whois):
+def perform_reconnaissance(domain, ports, output_file, enable_subdomains, enable_whois, enable_dns):
     """
-    Simulates a reconnaissance process and performs subdomain enumeration and WHOIS lookup if enabled.
+    Performs reconnaissance tasks including simulated port scan, subdomain enumeration,
+    WHOIS lookup, and DNS lookup, based on enabled flags.
     """
     print(f"\n--- Starting Reconnaissance for {domain} ---")
     print(f"Target Domain: {domain}")
@@ -118,6 +127,35 @@ def perform_reconnaissance(domain, ports, output_file, enable_subdomains, enable
         print("\n--- WHOIS lookup skipped. ---")
         output_content.append("\nWHOIS lookup skipped.\n")
 
+    # --- DNS Lookup ---
+    if enable_dns:
+        print("\n--- DNS Lookup ---")
+        output_content.append("\n--- DNS Lookup ---\n")
+        dns_info = get_dns_records(domain)
+        if dns_info:
+            print("  [+] DNS Records Found:")
+            output_content.append("DNS Records:\n")
+            for record_type, records in dns_info.items():
+                if records:
+                    line = f"  {record_type} Records:"
+                    print(line)
+                    output_content.append(f"{line}\n")
+                    for record_value in records:
+                        record_line = f"    - {record_value}"
+                        print(record_line)
+                        output_content.append(f"{record_line}\n")
+                else:
+                    line = f"  {record_type} Records: No records found."
+                    print(line)
+                    output_content.append(f"{line}\n")
+        else:
+            print("  [!] No DNS information found or an error occurred.")
+            output_content.append("No DNS information found or an error occurred.\n")
+    else:
+        print("\n--- DNS lookup skipped. ---")
+        output_content.append("\nDNS lookup skipped.\n")
+
+
     # --- General Simulated Findings (can be combined with port scan findings) ---
     output_content.append("\n--- General Simulated Findings ---\n")
     simulated_general_findings = [
@@ -152,8 +190,8 @@ def main():
 Examples:
   python recon.py --domain example.com
   python recon.py --domain example.com --ports 80-443 --output report.txt
-  python recon.py --domain secure.com --subdomains --whois
-  python recon.py --domain test.com --ports 22 --subdomains --whois --output full_report.txt
+  python recon.py --domain secure.com --subdomains --whois --dns
+  python recon.py --domain test.com --ports 22 --subdomains --whois --dns --output full_report.txt
 """
     )
 
@@ -197,11 +235,18 @@ Ports must be between 1 and 65535.
         help='Perform WHOIS lookup for domain registration details.'
     )
 
+    # New optional flag: --dns
+    parser.add_argument(
+        '--dns',
+        action='store_true', # If present, stores True; otherwise False
+        help='Perform DNS record lookup (A, AAAA, MX, TXT, NS).'
+    )
+
     # 3. Parse the arguments
     args = parser.parse_args()
 
     # 4. Use the parsed arguments
-    perform_reconnaissance(args.domain, args.ports, args.output, args.subdomains, args.whois)
+    perform_reconnaissance(args.domain, args.ports, args.output, args.subdomains, args.whois, args.dns)
 
 if __name__ == "__main__":
     main()
