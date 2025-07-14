@@ -1,0 +1,45 @@
+Recon Suite
+A lightweight, modular command-line tool for basic open-source intelligence (OSINT) gathering on target domains. This suite consolidates common reconnaissance tasks into a single, easy-to-use interface.
+
+Features
+Port Scanning: Multi-threaded TCP port scanning for user-defined ranges.
+
+Subdomain Enumeration: Discovers unique subdomains via crt.sh certificate transparency logs.
+
+WHOIS Lookup: Retrieves domain registration details (creation/expiry, registrar, name servers).
+
+DNS Lookup: Fetches A, AAAA, MX, TXT, and NS records.
+
+Flexible Output: Displays results to console with optional saving to a text file.
+
+Installation
+Clone the repository:
+
+git clone https://github.com/your-username/recon-suite.git
+cd recon-suite
+
+(Note: Replace https://github.com/your-username/recon-suite.git with your actual repository URL.)
+
+Create and activate a virtual environment:
+
+python3 -m venv .venv
+source .venv/bin/activate
+
+Install dependencies:
+
+pip install -r requirements.txt
+
+Usage
+Run the main script recon.py with the --domain flag and desired reconnaissance options.
+
+# Display help message
+python recon.py --help
+
+# Example: Run all reconnaissance tasks and save to file
+python recon.py --domain example.com --ports 80-443 --subdomains --whois --dns --output example_recon.txt
+
+# Example: Scan specific ports on a test target (use scanme.nmap.org for safe testing)
+python recon.py --domain scanme.nmap.org --ports 20-100
+
+# Example: Perform subdomain and WHOIS lookup
+python recon.py --domain google.com --subdomains --whois
