@@ -1,4 +1,6 @@
-Recon Suite
+#Recon Suite
+
+
 A lightweight, modular command-line tool for basic open-source intelligence (OSINT) gathering on target domains. This suite consolidates common reconnaissance tasks into a single, easy-to-use interface.
 
 Features
@@ -15,10 +17,9 @@ Flexible Output: Displays results to console with optional saving to a text file
 Installation
 Clone the repository:
 
-git clone https://github.com/your-username/recon-suite.git
+git clone https://github.com/kevinroshann/recon_suite.git
 cd recon-suite
 
-(Note: Replace https://github.com/your-username/recon-suite.git with your actual repository URL.)
 
 Create and activate a virtual environment:
 
