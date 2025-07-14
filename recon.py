@@ -26,6 +26,14 @@ except ImportError:
           "Make sure 'modules/dns_lookup.py' exists.", file=sys.stderr)
     sys.exit(1)
 
+# Import the new Port Scan module
+try:
+    from modules.port_scan import scan_ports
+except ImportError:
+    print("[!] Error: Could not import 'port_scan' module. "
+          "Make sure 'modules/port_scan.py' exists.", file=sys.stderr)
+    sys.exit(1)
+
 
 def parse_port_range(port_range_str):
     """
@@ -53,8 +61,8 @@ def parse_port_range(port_range_str):
 
 def perform_reconnaissance(domain, ports, output_file, enable_subdomains, enable_whois, enable_dns):
     """
-    Performs reconnaissance tasks including simulated port scan, subdomain enumeration,
-    WHOIS lookup, and DNS lookup, based on enabled flags.
+    Performs reconnaissance tasks including actual port scan (if --ports is used),
+    subdomain enumeration, WHOIS lookup, and DNS lookup, based on enabled flags.
     """
     print(f"\n--- Starting Reconnaissance for {domain} ---")
     print(f"Target Domain: {domain}")
@@ -63,23 +71,27 @@ def perform_reconnaissance(domain, ports, output_file, enable_subdomains, enable
     output_content.append(f"Reconnaissance Report for: {domain}\n")
     output_content.append(f"Timestamp: {os.path.getmtime(__file__)}\n") # Using file modification time as a placeholder timestamp
 
-    # --- Port Scanning Simulation ---
-    output_content.append("\n--- Port Scan Simulation ---\n")
-    if ports:
-        if ports[0] == ports[1]:
-            port_info = f"Scanning Port: {ports[0]}"
+    # --- Port Scanning ---
+    output_content.append("\n--- Port Scan Results ---\n")
+    if ports: # If --ports flag was used, perform actual scan
+        print(f"[*] Initiating actual port scan for {domain} on ports {ports[0]}-{ports[1]}...")
+        # Call the actual port scan function
+        # You can adjust num_threads and scan_timeout here if needed
+        open_ports_found = scan_ports(domain, ports, num_threads=50, scan_timeout=0.5)
+
+        if open_ports_found:
+            output_content.append(f"Found {len(open_ports_found)} open ports:\n")
+            print(f"  [+] Found {len(open_ports_found)} open ports:")
+            for port in open_ports_found:
+                output_content.append(f"  - {port}/tcp\n")
+                print(f"    - {port}/tcp")
         else:
-            port_info = f"Scanning Ports: {ports[0]} - {ports[1]}"
-        print(port_info)
-        output_content.append(f"{port_info}\n")
-        # Simulate some findings for the port scan
-        output_content.append("  - Found open port 80 (HTTP)\n")
-        output_content.append("  - Found open port 443 (HTTPS)\n")
-        print("  [+] Found open port 80 (HTTP)")
-        print("  [+] Found open port 443 (HTTPS)")
-    else:
-        print("No specific ports provided for scanning (using default or common ports in simulation).")
-        output_content.append("No specific ports provided for scanning (default/common ports).\n")
+            output_content.append(f"No open ports found on {domain} in the range {ports[0]}-{ports[1]} or an error occurred during scan.\n")
+            print(f"  [!] No open ports found on {domain} in the range {ports[0]}-{ports[1]} or an error occurred during scan.")
+    else: # If --ports flag was NOT used, show simulation message
+        print("No specific ports provided for scanning. Port scan skipped.")
+        output_content.append("No specific ports provided for scanning. Port scan skipped.\n")
+
 
     # --- Subdomain Enumeration ---
     if enable_subdomains:
@@ -156,7 +168,7 @@ def perform_reconnaissance(domain, ports, output_file, enable_subdomains, enable
         output_content.append("\nDNS lookup skipped.\n")
 
 
-    # --- General Simulated Findings (can be combined with port scan findings) ---
+    # --- General Simulated Findings (these are always present for now) ---
     output_content.append("\n--- General Simulated Findings ---\n")
     simulated_general_findings = [
         "Identified web server: Nginx/1.18.0",
@@ -206,11 +218,13 @@ Examples:
     )
 
     # Optional argument: --ports with custom type parsing
+    # This now triggers the real port scan if provided.
     parser.add_argument(
         '--ports',
         type=parse_port_range, # Use our custom function to parse the range
         help='''Specify a port or a range of ports to scan (e.g., "80", "1-1000").
 Ports must be between 1 and 65535.
+If provided, an actual port scan will be performed.
 '''
     )
 
